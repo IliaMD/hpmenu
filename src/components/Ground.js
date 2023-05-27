@@ -1,16 +1,17 @@
 import React, { useEffect } from "react";
 import { useLoader } from "@react-three/fiber";
-import { MeshReflectorMaterial } from "@react-three/drei";
+import { MeshReflectorMaterial, useGLTF } from "@react-three/drei";
 import { RepeatWrapping, TextureLoader } from "three";
 import * as THREE from "three";
 
 export const Ground = () => {
-  const [roughness, normal, logo] = useLoader(TextureLoader, [
+  const [roughness, normal, black] = useLoader(TextureLoader, [
     process.env.PUBLIC_URL + "textures/terrain-roughness.jpg",
     process.env.PUBLIC_URL + "textures/terrain-normal.jpg",
-    process.env.PUBLIC_URL + "textures/logo.png",
+    process.env.PUBLIC_URL + "textures/terrain-grey.jpg",
   ]);
 
+  const { scene } = useGLTF("./logo/hookaRED.glb");
   useEffect(() => {
     [roughness, normal].forEach((t) => {
       t.wrapS = RepeatWrapping;
@@ -19,11 +20,10 @@ export const Ground = () => {
       t.offset.set(0, 0);
     });
 
-    [logo].forEach((t) => {
-      t.repeat.set(5, 5);
-      t.center.set(0.5, 0.5);
+    [black].forEach((t) => {
+      t.repeat.set(1, 1);
     });
-  }, [roughness, normal, logo]);
+  }, [roughness, normal, black]);
 
   return (
     <mesh rotation-x={-Math.PI * 0.5}>
@@ -33,9 +33,11 @@ export const Ground = () => {
         normalMap={normal}
         normalScale={[0.3, 0.3]}
         roughnessMap={roughness}
-        color={[0.3, 0.3, 0.3]}
-        map={logo}
+        color={[0.5, 0.5, 0.5]}
+        map={black}
       />
+
+      <primitive object={scene} position={[0, 0, 3]} rotation={[-4.8, 0, 0]} />
     </mesh>
   );
 };

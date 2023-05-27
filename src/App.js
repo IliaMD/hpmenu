@@ -1,31 +1,30 @@
-import React, { Suspense, useEffect, useState, useRef, useMemo } from "react";
+import React, {
+  Suspense,
+  useEffect,
+  useState,
+  useRef,
+  useMemo,
+  createRef,
+} from "react";
 import { Canvas } from "@react-three/fiber";
-import { Loader, Boxes, Ground, Navbar, Hero } from "./components";
+import { Ground, Footer } from "./components";
 import Hamburger from "hamburger-react";
 import {
   Button,
   Box,
-  Typography,
-  Container,
   Grid,
   ImageList,
   ImageListItem,
   AppBar,
+  useMediaQuery,
 } from "@mui/material";
 import "./App.css";
-import {
-  EffectComposer,
-  Bloom,
-  ChromaticAberration,
-} from "@react-three/postprocessing";
-import { BlendFunction } from "postprocessing";
 import {
   CubeCamera,
   Environment,
   OrbitControls,
   PerspectiveCamera,
 } from "@react-three/drei";
-import { useMediaQuery } from "@mui/material";
 import * as THREE from "three";
 import { Parallax, Background } from "react-parallax";
 import { styled } from "@mui/system";
@@ -37,8 +36,7 @@ import {
   cocktails,
   navs,
 } from "./assets/mock/menu";
-import bg from "./assets/brick_bg.jpg";
-import { motion, useScroll, useMotionValueEvent } from "framer-motion";
+import useScrollBlock from "./hooks/useScrollBlock";
 
 const Title = styled("span")(({ theme }) => ({
   fontWeight: "bold",
@@ -122,16 +120,16 @@ function LoadScreen() {
       <PerspectiveCamera
         makeDefault
         fov={50}
-        position={isDesktop ? [0, 12, 3] : [0, 14, 14]}
+        position={isDesktop ? [-1, 4, 17] : [-2, 3, 24]}
       />
 
       <color args={[0, 0, 0]} attach="background" />
 
       <CubeCamera resolution={256} frames={Infinity}>
-        {(texture) => (
-          <>
+        {(texture, index) => (
+          <React.Fragment key={index}>
             <Environment map={texture} />
-          </>
+          </React.Fragment>
         )}
       </CubeCamera>
 
@@ -139,9 +137,9 @@ function LoadScreen() {
         <spotLight
           color={new THREE.Color("#ffffff")}
           intensity={count > 2 ? 0.6 : intensity}
-          angle={0.6}
+          angle={1}
           penumbra={0.5}
-          position={[-20, 15, -15]}
+          position={[-15, 10, 10]}
           castShadow
           shadow-bias={-0.0001}
         />
@@ -151,9 +149,9 @@ function LoadScreen() {
         <spotLight
           color={new THREE.Color("#ffffff")}
           intensity={count > 2 ? 0.6 : intensity}
-          angle={0.6}
+          angle={1}
           penumbra={0.5}
-          position={[20, 15, -15]}
+          position={[15, 10, 10]}
           castShadow
           shadow-bias={-0.0001}
         />
@@ -165,25 +163,23 @@ function LoadScreen() {
 }
 
 function App() {
-  const [loadingPercent, setLoadingPercent] = useState(0);
   const [isMoved, setIsMoved] = useState(false);
   const isDesktop = useMediaQuery("(min-width:600px)");
   const [isOpen, setOpen] = useState(false);
+  const [scrollContentPos, setScrollContentPos] = useState(0);
+  const [blockScroll, allowScroll] = useScrollBlock();
 
   const handleOpenMenu = () => {
+    setScrollContentPos(window.scrollY);
+    if (isOpen === false) {
+      blockScroll();
+    } else {
+      allowScroll();
+    }
+
+    window.scrollTo(0, scrollContentPos);
     setOpen(!isOpen);
   };
-
-  useEffect(() => {
-    const intervalId = setInterval(() => {
-      setLoadingPercent((prevPercent) => {
-        if (prevPercent >= 98) {
-          clearInterval(intervalId);
-        }
-        return prevPercent + 1;
-      });
-    }, 40);
-  }, []);
 
   const handleMove = () => {
     setIsMoved(true);
@@ -198,35 +194,56 @@ function App() {
 
   const navsRef = useRef([]);
 
-  const handleScroll = (name) => {
-    console.log(name);
-    const element = document.getElementById(`#${name}`);
-    console.log(element);
-    if (element) {
-      // 👇 Will scroll smoothly to the top of the next section
-      element.scrollIntoView({ behavior: "smooth" });
+  const handleScroll = (index) => {
+    allowScroll();
+
+    switch (index) {
+      case 0:
+        window.scrollTo(0, nonAlcoholRefs[0].current?.offsetTop - 120);
+        break;
+      case 1:
+        window.scrollTo(0, nonAlcoholRefs[1].current?.offsetTop - 120);
+        break;
+      case 2:
+        window.scrollTo(0, nonAlcoholRefs[4].current?.offsetTop - 120);
+        break;
+      case 3:
+        window.scrollTo(0, wineRef.current?.offsetTop - 120);
+        break;
+      case 4:
+        window.scrollTo(0, whiskeyRef.current?.offsetTop - 120);
+        break;
+      case 5:
+        window.scrollTo(0, alcoRef.current?.offsetTop - 120);
+        break;
+      case 6:
+        window.scrollTo(0, cocktailsRef.current?.offsetTop - 120);
+        break;
     }
 
     setOpen(false);
   };
-  const { scrollY } = useScroll();
 
-  useMotionValueEvent(scrollY, "change", (latest) => {
-    console.log("Page scroll: ", latest);
-  });
-
-  const hookahRef = useRef(null);
-  const teaRef = useRef(null);
-  const lemonadeRef = useRef(null);
+  const nonAlcoholRefs = useMemo(
+    () => Array.from({ length: nonAlcohol.length }).map(() => createRef()),
+    []
+  );
   const wineRef = useRef(null);
   const whiskeyRef = useRef(null);
   const alcoRef = useRef(null);
   const cocktailsRef = useRef(null);
+  const contentRef = useRef(null);
+
+  const [value, setValue] = useState(false);
 
   useEffect(() => {
-    console.log(wineRef.current?.offsetTop);
-  }, [wineRef.current]);
-  
+    const timeoutId = setTimeout(() => {
+      setValue(true);
+    }, 2000);
+
+    return () => clearTimeout(timeoutId);
+  }, []);
+
   return (
     <>
       {!isMoved ? (
@@ -235,32 +252,33 @@ function App() {
             <LoadScreen />
           </Canvas>
 
-          <Button
-            variant="contained"
-            sx={{
-              position: "absolute",
-              top: "85%",
-              left: "50%",
-              transform: "translate(-50%, -50%)",
-              backgroundColor: "#e3000e",
-              fontSize: " 30px",
-              letterSpacing: "3px",
-              width: "150px",
-              height: "60px",
-              fontFamily: "PoiretOne",
-              "&:hover": {
-                background: "#e3000e",
-              },
-            }}
-            onClick={handleMove}
-          >
-            Меню
-          </Button>
+          {value && (
+            <Button
+              variant="contained"
+              sx={{
+                position: "absolute",
+                top: "75%",
+                left: "50%",
+                transform: "translate(-50%, -50%)",
+                backgroundColor: "#e3000e",
+                fontSize: " 30px",
+                letterSpacing: "3px",
+                width: "150px",
+                height: "60px",
+                fontFamily: "PoiretOne",
+                "&:hover": {
+                  background: "#e3000e",
+                },
+              }}
+              onClick={handleMove}
+            >
+              Меню
+            </Button>
+          )}
         </Suspense>
       ) : (
-        <div style={{ position: "relative" }}>
+        <div style={{ position: "relative" }} ref={contentRef}>
           <AppBar
-            sticky
             sx={{
               backgroundColor: "black",
               height: "80px",
@@ -273,13 +291,12 @@ function App() {
               pr: 6,
             }}
           >
-            <Box sx={{}}>
+            <Box>
               <Hamburger
                 direction="right"
                 size={32}
                 toggled={isOpen}
-                toggle={setOpen}
-                onClick={handleOpenMenu}
+                toggle={handleOpenMenu}
                 color={"white"}
               />
             </Box>
@@ -288,6 +305,8 @@ function App() {
               <img
                 src={"/textures/logo.png"}
                 style={{ height: "80px", width: "80px" }}
+                alt="logo"
+                onClick={() => window.scrollTo(0, 0)}
               />
             </Box>
           </AppBar>
@@ -312,10 +331,10 @@ function App() {
               <Title
                 key={i}
                 ref={navsRef.current[i]}
-                sx={{ py: 2, fontSize: "30px", cursor: "pointer" }}
+                sx={{ py: 1, fontSize: "22px", cursor: "pointer" }}
                 onClick={(e) => {
                   e.preventDefault();
-                  handleScroll(name);
+                  handleScroll(i);
                 }}
               >
                 {name}
@@ -323,102 +342,134 @@ function App() {
             ))}
           </Box>
 
-          <Parallax strength={isDesktop ? 5000 : 3000}>
-            <motion.div>
-              <Box
-                sx={{
-                  color: "white",
-                  fontFamily: "PoiretOne",
-                  p: 4,
-                  pt: 12,
-                  px: { md: 24 },
-                }}
-              >
-                {nonAlcohol.map((elem, index) => (
-                  <>
-                    <Title id={`#${elem.title}`}>{elem.title}</Title>
-                    {elem.position.map((position) => (
-                      <PositionBox>
-                        <PositionName sx={{ textAlign: "left" }}>
-                          {position.name}
-                        </PositionName>
-                        <PositionPrice>{position.price}</PositionPrice>
-                      </PositionBox>
-                    ))}
-                  </>
-                ))}
-                <Grid container ref={wineRef}>
-                  <Title id="#Вино">Вино</Title>
-                  {wine.map((elem, index) => (
-                    <Grid item xs={index === 2 ? 12 : 6}>
-                      <Title>{elem.title}</Title>
-                      {elem.position.map((position) => (
-                        <PositionBox sx={{ flexDirection: "column", py: 2 }}>
-                          <PositionName>{position.name}</PositionName>
-                          <PositionDesc>{position.desc}</PositionDesc>
-                          <PositionPrice>{position.price}</PositionPrice>
-                        </PositionBox>
-                      ))}
-                    </Grid>
+          <Parallax strength={isDesktop ? 2000 : 500}>
+            <Box
+              sx={{
+                overflow: isOpen ? "hidden" : "hidden",
+                color: "white",
+                fontFamily: "PoiretOne",
+                p: 4,
+                pt: 12,
+                px: { md: 24 },
+              }}
+            >
+              {nonAlcohol.map((elem, index) => (
+                <React.Fragment key={index}>
+                  <Title id={`#${elem.title}`} ref={nonAlcoholRefs[index]}>
+                    {elem.title}
+                  </Title>
+                  {elem.position.map((position) => (
+                    <PositionBox>
+                      <PositionName sx={{ textAlign: "left" }}>
+                        {position.name}
+                      </PositionName>
+                      <PositionPrice>{position.price}</PositionPrice>
+                    </PositionBox>
                   ))}
-                </Grid>
-
-                {whiskey.map((elem) => (
-                  <>
-                    <Title id="#Виски">{elem.title}</Title>
+                </React.Fragment>
+              ))}
+              <Grid container ref={wineRef}>
+                <Title sx={{ fontSize: "30px" }} id="#Вино">
+                  Вино
+                </Title>
+                {wine.map((elem, index) => (
+                  <Grid item xs={index === 2 ? 12 : 6} key={index}>
+                    <Title sx={{ fontSize: "25px" }}>{elem.title}</Title>
                     {elem.position.map((position) => (
                       <PositionBox sx={{ flexDirection: "column", py: 2 }}>
-                        <PositionName>{position.name}</PositionName>
-                        <PositionPrice>{position.desc}</PositionPrice>
+                        <PositionName
+                          sx={{ fontWeight: 700, letterSpacing: "2px" }}
+                        >
+                          {position.name}
+                        </PositionName>
+                        <PositionDesc>{position.desc}</PositionDesc>
                         <PositionPrice>{position.price}</PositionPrice>
                       </PositionBox>
                     ))}
-                  </>
+                  </Grid>
                 ))}
+              </Grid>
 
-                <ImageList
-                  variant="quilted"
-                  cols={2}
-                  gap={14}
-                  id="#Крепкие напитки"
-                >
-                  {alco.map((elem, index) => (
-                    <ImageListItem cols={1} rows={index === 0 ? 2 : 1}>
-                      <Title>{elem.title}</Title>
-                      {elem.position.map((position) => (
-                        <PositionBox sx={{ py: "4px" }}>
-                          <PositionName
-                            sx={{ textAlign: "left", fontSize: "18px" }}
-                          >
-                            {position.name}
-                          </PositionName>
-                          <PositionPrice sx={{ fontSize: "18px" }}>
-                            {position.price}
-                          </PositionPrice>
-                        </PositionBox>
-                      ))}
-                    </ImageListItem>
+              {whiskey.map((elem, index) => (
+                <React.Fragment key={index}>
+                  <Title id="#Виски" ref={whiskeyRef} sx={{ fontSize: "30px" }}>
+                    {elem.title}
+                  </Title>
+                  {elem.position.map((position) => (
+                    <PositionBox sx={{ flexDirection: "column", py: 2 }}>
+                      <PositionName
+                        sx={{ fontWeight: 700, letterSpacing: "2px" }}
+                      >
+                        {position.name}
+                      </PositionName>
+                      <PositionPrice>{position.desc}</PositionPrice>
+                      <PositionPrice>{position.price}</PositionPrice>
+                    </PositionBox>
                   ))}
-                </ImageList>
+                </React.Fragment>
+              ))}
 
-                {cocktails.map((elem) => (
-                  <>
-                    <Title sx={{ mt: 4, mb: 1 }} id="#Алкогольные коктейли">
-                      {elem.title}
-                    </Title>
+              <ImageList
+                variant="quilted"
+                cols={2}
+                gap={14}
+                id="#Крепкие напитки"
+                ref={alcoRef}
+              >
+                {alco.map((elem, index) => (
+                  <ImageListItem
+                    cols={1}
+                    rows={index === 0 ? 2 : 1}
+                    key={index}
+                  >
+                    <Title>{elem.title}</Title>
                     {elem.position.map((position) => (
-                      <PositionBox sx={{ flexDirection: "column", py: 1 }}>
-                        <PositionName>{position.name}</PositionName>
-                        <PositionPrice sx={{ fontSize: "16px" }}>
-                          {position.desc}
+                      <PositionBox sx={{ py: "4px" }}>
+                        <PositionName
+                          sx={{ textAlign: "left", fontSize: "18px" }}
+                        >
+                          <div
+                            dangerouslySetInnerHTML={{ __html: position.name }}
+                          />
+                        </PositionName>
+                        <PositionPrice sx={{ fontSize: "18px" }}>
+                          {position.price}
                         </PositionPrice>
-                        <PositionPrice>{position.price}</PositionPrice>
                       </PositionBox>
                     ))}
-                  </>
+                  </ImageListItem>
                 ))}
-              </Box>
-            </motion.div>
+              </ImageList>
+
+              {cocktails.map((elem, index) => (
+                <React.Fragment key={index}>
+                  <Title
+                    sx={{ mt: 4, mb: 1, fontSize: "30px" }}
+                    id="#Алкогольные коктейли"
+                    ref={cocktailsRef}
+                  >
+                    {elem.title}
+                  </Title>
+                  {elem.position.map((position, index) => (
+                    <PositionBox
+                      sx={{ flexDirection: "column", py: 1 }}
+                      key={index}
+                    >
+                      <PositionName
+                        sx={{ fontWeight: 700, letterSpacing: "2px" }}
+                      >
+                        {position.name}
+                      </PositionName>
+                      <PositionPrice sx={{ fontSize: "16px" }}>
+                        {position.desc}
+                      </PositionPrice>
+                      <PositionPrice>{position.price}</PositionPrice>
+                    </PositionBox>
+                  ))}
+                </React.Fragment>
+              ))}
+            </Box>
+            <Footer />
             <Background style={{ width: "100%", height: "100%" }}>
               <div style={styles}></div>
             </Background>

@@ -7,11 +7,17 @@ canvas {
   margin: 0;
 }
 
+a {
+  text-decoration: none;
+  color: white
+}
+
 @font-face {
   font-family: "RussoOne";
   src: local("RussoOne"),
     url(./assets/fonts/RussoOne-Regular.ttf) format("opentype");
 }
+
 @font-face {
   font-family: "PoiretOne";
   src: local("PoiretOne"),
